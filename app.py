@@ -24,12 +24,19 @@ def generate_palette():
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
 
-            page.goto("https://www.onpallet.com/fr/calculateur-de-palettes")
+            # Timeout global à 60 secondes
+            page.set_default_timeout(60000)
 
+            page.goto("https://www.onpallet.com/fr/calculateur-de-palettes", 
+                      wait_until="networkidle")
+
+            page.wait_for_selector("button#palletselect", state="visible")
             page.click("button#palletselect")
+
+            page.wait_for_selector("a#ps_palX", state="visible")
             page.click("a#ps_palX")
 
-            page.wait_for_selector("input#ps_custL")
+            page.wait_for_selector("input#ps_custL", state="visible")
             page.fill("input#ps_custL", str(data['longueur_palette']))
             page.fill("input#ps_custW", str(data['largeur_palette']))
 
@@ -40,7 +47,8 @@ def generate_palette():
 
             page.click("input#submit")
 
-            page.wait_for_selector("canvas#palletcanvas", timeout=20000)
+            page.wait_for_selector("canvas#palletcanvas", 
+                                   state="visible", timeout=60000)
 
             canvas = page.locator("canvas#palletcanvas")
             png = canvas.screenshot()
