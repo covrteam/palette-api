@@ -23,36 +23,34 @@ def generate_palette():
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
-
-            # Timeout global à 60 secondes
             page.set_default_timeout(60000)
 
-            page.goto("https://www.onpallet.com/fr/calculateur-de-palettes", 
-                      wait_until="networkidle")
+            page.goto("https://www.onpallet.com/fr/calculateur-de-palettes",
+                      wait_until="domcontentloaded")
 
-            page.wait_for_selector("button#palletselect", state="visible")
+            # Remplir les champs colis
+            page.fill("input#p_width",  str(data['largeur_colis']))
+            page.fill("input#p_length", str(data['longueur_colis']))
+            page.fill("input#p_height", str(data['hauteur_colis']))
+            page.fill("input#p_weight", str(data['poids_colis']))
+
+            # Ouvrir le dropdown Bootstrap et cliquer Custom
             page.click("button#palletselect")
-
             page.wait_for_selector("a#ps_palX", state="visible")
             page.click("a#ps_palX")
 
-            page.wait_for_selector("input#ps_custL", state="visible")
-            page.fill("input#ps_custL", str(data['longueur_palette']))
+            # Remplir dimensions palette directement
             page.fill("input#ps_custW", str(data['largeur_palette']))
+            page.fill("input#ps_custL", str(data['longueur_palette']))
 
-            page.fill("input#p_height", str(data['hauteur_colis']))
-            page.fill("input#p_length", str(data['longueur_colis']))
-            page.fill("input#p_width",  str(data['largeur_colis']))
-            page.fill("input#p_weight", str(data['poids_colis']))
-
+            # Calculer
             page.click("input#submit")
 
-            page.wait_for_selector("canvas#palletcanvas", 
-                                   state="visible", timeout=60000)
+            # Attendre le canvas
+            page.wait_for_selector("canvas#palletcanvas", state="visible", timeout=60000)
+            page.wait_for_timeout(2000)
 
-            canvas = page.locator("canvas#palletcanvas")
-            png = canvas.screenshot()
-
+            png = page.locator("canvas#palletcanvas").screenshot()
             browser.close()
 
             return send_file(BytesIO(png), mimetype='image/png', as_attachment=False)
